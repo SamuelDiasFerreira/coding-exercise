@@ -1,22 +1,27 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
-import {FormControl} from "@angular/forms";
-import {Subscription} from "rxjs";
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { Subscription } from 'rxjs';
+import { MockDataService } from 'src/app/services/mock-data.service';
+import { Item } from 'src/app/types';
+import { isValidRegex } from 'src/app/utils/regex';
 
 @Component({
   selector: 'app-list',
   templateUrl: './list.component.html',
-  styleUrls: ['./list.component.scss']
+  styleUrls: ['./list.component.scss'],
 })
 export class ListComponent implements OnInit, OnDestroy {
   filterForm: FormControl;
   subscriptions = new Subscription();
 
-  constructor() {
+  arrListOriginal: Item[] = [];
+  arrListFiltered: Item[] = [];
 
-  }
+  constructor(private svcMockData: MockDataService) {}
 
   ngOnInit(): void {
-    this.initForm()
+    this.initForm();
+    this.initList();
   }
 
   ngOnDestroy() {
@@ -27,12 +32,42 @@ export class ListComponent implements OnInit, OnDestroy {
     this.filterForm = new FormControl();
     this.subscriptions.add(
       this.filterForm.valueChanges.subscribe((filterValue) => {
-        this.onFilterChange(filterValue);
+        if (filterValue) this.onFilterChange(filterValue);
+        else this.arrListFiltered = this.arrListOriginal;
       })
-    )
+    );
   }
 
-  onFilterChange(inputSearched: string) {
+  initList(): void {
+    this.svcMockData.getData().subscribe((arr) => {
+      this.arrListOriginal = arr;
+      this.arrListFiltered = arr;
+    });
+  }
 
+  setSelectedItem(obj: Item): void {
+    this.svcMockData.setSelectedObj(obj);
+  }
+
+  private onFilterChange(inputSearched: string) {
+    let isRegexValid = isValidRegex(inputSearched);
+    let search = !isRegexValid
+      ? inputSearched.toLowerCase().replace(',', '.')
+      : inputSearched;
+
+    this.arrListFiltered = this.arrListOriginal.filter((obj: Item | any) => {
+      let isNameMatch = !isRegexValid
+        ? obj.name.toLowerCase().includes(search)
+        : new RegExp(inputSearched).test(obj.name);
+
+      let strPrice = obj?.price?.toFixed(2)?.toString();
+      let isPriceMatch = !isRegexValid
+        ? strPrice?.includes(search)
+        : new RegExp(inputSearched).test(strPrice);
+
+      let isPremium = obj?.premium;
+
+      return isNameMatch || isPriceMatch || isPremium;
+    });
   }
 }

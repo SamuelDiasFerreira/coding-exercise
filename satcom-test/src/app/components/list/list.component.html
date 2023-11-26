@@ -1,9 +1,18 @@
 <div class="list-container">
   <ul class="list">
     <div class="filters">
-      <input type="text" [formControl]="filterForm" placeholder="Search element"/>
+      <input
+        type="text"
+        [formControl]="filterForm"
+        placeholder="Search element"
+      />
     </div>
-    <li class="list-element">
+    <li
+      class="list-element"
+      (click)="setSelectedItem(item)"
+      *ngFor="let item of arrListFiltered"
+    >
+      {{ item.name }}
     </li>
   </ul>
 </div>
